@@ -1,6 +1,6 @@
 @php
-$transactionlog = Vanguard\Transaction::whereUserId(Auth::user()->id)->take(10)->get();
-$last = Vanguard\Transaction::whereUserId(Auth::user()->id)->whereStatus('success')->latest()->first();
+$transactionlog = Vanguard\Transaction::whereUserId(Auth::user()->id)->take(10)->orderby('updated_at','DESC')->get();
+$last = Vanguard\Transaction::whereUserId(Auth::user()->id)->whereStatus('SUCCESSFUL')->orderby('updated_at','DESC')->latest()->first();
 @endphp
 <div class="col-xl-12 col-lg-12">
     @include('partials.messages')
@@ -82,7 +82,7 @@ $last = Vanguard\Transaction::whereUserId(Auth::user()->id)->whereStatus('succes
                                         </p>
                                     </td>
                                     <td>
-                                        <p class="@if($data->status == 'pending') inprogress @elseif($data->status == 'success') completed @else cancelled @endif">{{strtoUpper($data->status)}}</p>
+                                        <p class="@if($data->status == 'pending') inprogress @elseif($data->status == 'SUCCESSFUL') completed @else cancelled @endif">{{strtoUpper($data->status)}}</p>
                                         <p class="mdr "><b>{{$data->trx}}</b></p>
                                     </td>
                                     <td>

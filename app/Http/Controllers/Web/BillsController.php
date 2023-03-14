@@ -141,6 +141,7 @@ class BillsController extends Controller
             $transaction->session_id = $sessionId;
             $transaction->type = 'debit';
             $transaction->provider = Session::get('operatorName');
+            $transaction->transaction_initialize = json_encode($queryArray);
             $transaction->provider_id = $operatorId;
             $transaction->status = 'pending';
             $transaction->save();
@@ -152,7 +153,6 @@ class BillsController extends Controller
     }
     public function airtimestep3(Request $request, $id = null)
     {
-         
         if(!Session::get('operatorId') || !Session::get('countryCode') || !Session::get('amount'))
         {
             return redirect()->route('airtime')->withErrors(__('Please fill the form to proceed with airtime purchase'));
@@ -172,64 +172,7 @@ class BillsController extends Controller
         return redirect()->route('airtime')->withErrors(__('Please fill the form to proceed with airtime purchase'));
 
     }
-
-    public function airtimeprocess(Request $request)
-    {
-        $recipientEmail = Session::get('bemail');
-        $phonenumber = Session::get('bphone');
-        $countryCode = Session::get('countryCode');
-        $amount = Session::get('amount');
-        $operatorId = Session::get('operatorId');
-        $token = $this->getToken();
-        $receiver_name = explode('@', $recipientEmail)[0];
-
-        
-
-
-        // START AIRTIME VENDING \\
-        /*
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://topups.reloadly.com/topups',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'GET',
-        CURLOPT_POSTFIELDS =>'{
-            "operatorId": '.$operatorId.',
-            "amount": '.$amount.',
-            "useLocalAmount": true,
-            "customIdentifier": '.rand(1000000,999999).',
-            "recipientEmail": '.$recipientEmail.',
-            "recipientPhone": {
-                "countryCode": '.$countryCode.',
-                "number": '.$phonenumber.'
-            },
-            "senderPhone": {
-                "countryCode": '.$countryCode.',
-                "number": '.$phonenumber.'
-            }
-        }',
-        CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$token.'',
-            'Content-Type: application/json'
-        ),
-        ));
-        $response = curl_exec($curl);
-       
-        curl_close($curl);
-        var_dump($response);
-         */
-
-        //return $response;
-        // END AIRTIME VENDING \\
-
-       return $operatorId; 
-    }
-
+ 
     public function buyairtimeprocess($id)
     {
         $trx = decrypt($id);
@@ -241,54 +184,58 @@ class BillsController extends Controller
         $operatorId = $transaction->provider_id;
         $token = $this->getToken();
         $receiver_name = explode('@', $recipientEmail)[0];
-
         
         // START AIRTIME VENDING \\
-        /*
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://topups.reloadly.com/topups',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'GET',
-        CURLOPT_POSTFIELDS =>'{
-            "operatorId": '.$operatorId.',
-            "amount": '.$amount.',
+        $url = "https://topups.reloadly.com/topups";
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+        $headers = array(
+        "Authorization: Bearer ".$token."",
+        "Content-Type: application/json",
+        );
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+
+        $data = <<<DATA
+        {
+            "operatorId": "$operatorId",
+            "amount": "$amount",
             "useLocalAmount": true,
-            "customIdentifier": '.rand(1000000,999999).',
-            "recipientEmail": '.$recipientEmail.',
+            "customIdentifier": "$trx",
+            "recipientEmail": "$recipientEmail",
             "recipientPhone": {
-                "countryCode": '.$countryCode.',
-                "number": '.$phonenumber.'
+                "countryCode": "$countryCode",
+                "number": "$phonenumber"
             },
             "senderPhone": {
-                "countryCode": '.$countryCode.',
-                "number": '.$phonenumber.'
+                "countryCode": "$countryCode",
+                "number": "$phonenumber"
             }
-        }',
-        CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$token.'',
-            'Content-Type: application/json'
-        ),
-        ));
-        $response = curl_exec($curl);
+        }
+        DATA;
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        //for debug only!
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        $resp = curl_exec($curl);
         curl_close($curl);
-        var_dump($response);
-         */
-
+        //var_dump($resp);
+        $response = json_decode($resp,true);
         //return $response;
         // END AIRTIME VENDING \\
-        $transaction->status = 'success';
+        if(isset($response['status']) && isset($response['transactionId']) > 0)
+        {
+        $transaction->status = $response['status'];
+        }
+        $transaction->vending_response= $resp;
         $transaction->save();
+        //return json_decode($resp,true);
     }
 
     public function getToken()
     {
-        
         $curl = curl_init();
         curl_setopt_array($curl, array(
         CURLOPT_URL => 'https://auth.reloadly.com/oauth/token',
@@ -300,8 +247,8 @@ class BillsController extends Controller
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'POST',
         CURLOPT_POSTFIELDS =>'{
-            "client_id": "WJIWfg4L6u075FcJvd3ftbIrTy9XzluC",
-            "client_secret": "JV2ZK89PfQ-3D5mh21pqBAF7oYM25b-809VHS1Hc9qKTEzcaQwtghdauBnT3q9f",
+            "client_id": "'.env('CLIENTID').'",
+            "client_secret": "'.env('CLIENTSECRET').'",
             "grant_type": "client_credentials",
             "audience": "https://topups.reloadly.com"
         }',
@@ -317,15 +264,18 @@ class BillsController extends Controller
 
     public function verifypayment($id)
     {
-            //return encrypt(874282814942059);
             $trx = decrypt($id);
             $transaction =  Transaction::whereTrx($trx)->firstorFail();
             if($transaction->status == 'pending')
             {
                 // START PAYMENT VERIFICATION \\
+
+                // END PAYMENT VERIFICATION \\
+
+                // START VENDING OPERATION \\
                 $this->buyairtimeprocess($id);
-                return redirect()->route('dashboard')->withSuccess(__('Airtime Pucahse Wass Successful Successful')); 
-                // END PAYMENT VERIFICATION \\ 
+                // END VENDING VERIFICATION \\ 
+                return redirect()->route('dashboard')->withSuccess(__('Airtime Pucahse Wass Successful')); 
             }
             //return $transaction;
             return redirect()->route('dashboard')->withErrors(__('This operation cannot be completed at the moment. Please try again later'));

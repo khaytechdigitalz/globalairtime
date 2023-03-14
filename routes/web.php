@@ -72,7 +72,6 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::any('/airtime/step2', 'BillsController@airtimestep2')->name('airtime.step2');
     Route::post('/submitoperator', 'BillsController@submitoperator')->name('submitoperator');
     Route::get('/airtime/step3/{id}', 'BillsController@airtimestep3')->name('airtime.step3');
-    Route::post('/airtime/step3/{id}', 'BillsController@airtimeprocess');
    
     /**
      * User Profile

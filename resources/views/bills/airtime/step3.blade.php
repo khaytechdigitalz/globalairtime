@@ -81,7 +81,10 @@
                                     <label for="accept">I accept <a href="javascript:void(0)">terms of use</a></label>
                                 </div>
                                 --}}
-                                <center><b class="text-danger" id="errorlog"></b></center>
+                                <center>
+                                    <b class="text-danger" id="errorlog"></b>
+                                    <b class="text-success" id="completelog"></b>
+                                </center>
                                 <div class="footer-area mt-40"> 
                                     <input type="button" class="cmn-btn active" value="Proceed To Payment Page" onclick="Checkout.showPaymentPage();" />
                                 </div>
@@ -103,7 +106,7 @@
 </script>
 @endpush
 
-<script src="https://ap.gateway.mastercard.com/static/checkout/checkout.min.js" data-error="errorCallback" data-cancel="cancelCallback"></script>
+<script src="https://ap.gateway.mastercard.com/static/checkout/checkout.min.js" data-error="errorCallback" data-cancel="cancelCallback" data-complete="completeCallback"></script>
 <script>
     function errorCallback(error) 
     {
@@ -118,6 +121,11 @@
     }
     function cancelCallback() {
         document.getElementById("errorlog").innerHTML = "Payment cancelled";
+     }
+     function completeCallback(resultIndicator, sessionVersion) 
+     {
+        document.getElementById("completelog").innerHTML = resultIndicator;     
+        //handle payment completion
      }
 
     Checkout.configure({
