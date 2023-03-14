@@ -1,5 +1,5 @@
 ## Vanguard - Advanced PHP Login and User Management
 
-- Website: https://vanguardapp.io
-- Documentation: https://milos.support-hub.io
-- Developed by [Milos Stojanovic](https://mstojanovic.net)
+- Product: Global Airtime
+- Website: http://globalairtime.budlogi.com
+- Developed by [ADETUNJI OLUWAKAYODE](https://google.com)
