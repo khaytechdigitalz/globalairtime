@@ -30,7 +30,7 @@
                                 <div class="main-area notifications-content">
                                     <div class="head-area d-flex justify-content-between">
                                         <h5>Notifications</h5>
-                                        <span class="mdr">4</span>
+                                        <span class="mdr">0</span>
                                     </div>
                                     <ul>
                                         {{--
@@ -84,8 +84,6 @@
                         </div>
                     </div>
                     @include('partials.sidebar.main')
-
-                    
                 </div>
             </div>
         </div>

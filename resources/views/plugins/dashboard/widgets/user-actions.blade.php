@@ -3,6 +3,7 @@ $transactionlog = Vanguard\Transaction::whereUserId(Auth::user()->id)->take(10)-
 $last = Vanguard\Transaction::whereUserId(Auth::user()->id)->whereStatus('success')->latest()->first();
 @endphp
 <div class="col-xl-12 col-lg-12">
+    @include('partials.messages')
     <div class="section-content">
         <div class="acc-details">
             <div class="top-area">

@@ -108,7 +108,7 @@ class BillsController extends Controller
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => 'apiOperation=INITIATE_CHECKOUT&apiPassword=5a630fdac72499e201655c23d7c8480e&apiUsername=merchant.PNLBDNG&merchant=PNLBDNG&interaction.operation=PURCHASE&interaction.merchant.name='.$receiver_name.'&interaction.merchant.email='.$recipientEmail.'&interaction.merchant.phone='.$phonenumber.'&order.id='.$code.'&order.amount=1.00&order.currency='.$currency.'&order.description=Airtime%20Purchase&order.reference='.$code,
+            CURLOPT_POSTFIELDS => 'apiOperation=INITIATE_CHECKOUT&apiPassword=5a630fdac72499e201655c23d7c8480e&apiUsername=merchant.PNLBDNG&merchant=PNLBDNG&interaction.operation=PURCHASE&interaction.merchant.name='.$receiver_name.'&interaction.merchant.email='.$recipientEmail.'&interaction.merchant.phone='.$phonenumber.'&interaction.returnUrl='.route('verifypayment',encrypt($code)).'&order.id='.$code.'&order.amount=1.00&order.currency='.$currency.'&order.description=Airtime%20Purchase&order.reference='.$code,
             CURLOPT_HTTPHEADER => array(
                 'Content-Type: application/x-www-form-urlencoded'
             ),
@@ -131,8 +131,11 @@ class BillsController extends Controller
             // print the value of session.id
             $transaction = new Transaction();
             $transaction->user_id = Auth::user()->id;
+            $transaction->email = $recipientEmail;
+            $transaction->phone = $phonenumber;
             $transaction->amount = $amount;
-            $transaction->currency = Session::get('countryCurrency');
+            $transaction->currency = $currency;
+            $transaction->country_code = $countryCode;
             $transaction->trx_type = 'airtime';
             $transaction->trx = $code;
             $transaction->session_id = $sessionId;
@@ -227,6 +230,62 @@ class BillsController extends Controller
        return $operatorId; 
     }
 
+    public function buyairtimeprocess($id)
+    {
+        $trx = decrypt($id);
+        $transaction =  Transaction::whereTrx($trx)->firstorFail();
+        $recipientEmail = $transaction->email;
+        $phonenumber = $transaction->phone;
+        $countryCode = $transaction->country_code;
+        $amount = $transaction->amount;
+        $operatorId = $transaction->provider_id;
+        $token = $this->getToken();
+        $receiver_name = explode('@', $recipientEmail)[0];
+
+        
+        // START AIRTIME VENDING \\
+        /*
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://topups.reloadly.com/topups',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_POSTFIELDS =>'{
+            "operatorId": '.$operatorId.',
+            "amount": '.$amount.',
+            "useLocalAmount": true,
+            "customIdentifier": '.rand(1000000,999999).',
+            "recipientEmail": '.$recipientEmail.',
+            "recipientPhone": {
+                "countryCode": '.$countryCode.',
+                "number": '.$phonenumber.'
+            },
+            "senderPhone": {
+                "countryCode": '.$countryCode.',
+                "number": '.$phonenumber.'
+            }
+        }',
+        CURLOPT_HTTPHEADER => array(
+            'Authorization: Bearer '.$token.'',
+            'Content-Type: application/json'
+        ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        var_dump($response);
+         */
+
+        //return $response;
+        // END AIRTIME VENDING \\
+        $transaction->status = 'success';
+        $transaction->save();
+    }
+
     public function getToken()
     {
         
@@ -254,5 +313,22 @@ class BillsController extends Controller
         curl_close($curl);
         $reply = json_decode($response,true);
         return $reply['access_token'];
+    }
+
+    public function verifypayment($id)
+    {
+            //return encrypt(874282814942059);
+            $trx = decrypt($id);
+            $transaction =  Transaction::whereTrx($trx)->firstorFail();
+            if($transaction->status == 'pending')
+            {
+                // START PAYMENT VERIFICATION \\
+                $this->buyairtimeprocess($id);
+                return redirect()->route('dashboard')->withSuccess(__('Airtime Pucahse Wass Successful Successful')); 
+                // END PAYMENT VERIFICATION \\ 
+            }
+            //return $transaction;
+            return redirect()->route('dashboard')->withErrors(__('This operation cannot be completed at the moment. Please try again later'));
+
     }
 }

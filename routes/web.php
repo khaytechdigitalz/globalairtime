@@ -58,6 +58,8 @@ Route::group(['middleware' => 'auth'], function () {
 });
 
 Route::get('/', 'FrontendController@index')->name('home');
+Route::get('/verifypayment/{id}', 'BillsController@verifypayment')->name('verifypayment');
+
 Route::group(['middleware' => ['auth', 'verified']], function () {
 
     /**
@@ -71,7 +73,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::post('/submitoperator', 'BillsController@submitoperator')->name('submitoperator');
     Route::get('/airtime/step3/{id}', 'BillsController@airtimestep3')->name('airtime.step3');
     Route::post('/airtime/step3/{id}', 'BillsController@airtimeprocess');
-
+   
     /**
      * User Profile
      */

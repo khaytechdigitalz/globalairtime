@@ -9,7 +9,6 @@
     <!-- StyleSheets  -->
     <link rel="stylesheet" href="{{url('public/backend/css/widget.css')}}">
  @endpush
-    @include('partials.messages')
     <!-- Dashboard Section start -->
     <section class="dashboard-section body-collapse">
         <div class="overlay pt-120">
